@@ -11,7 +11,7 @@ trait StopSystemAfterAll extends BeforeAndAfterAll {
   //  This trait can only be used if it’s mixedin with a test that uses the TestKit.
   override protected def afterAll() {
     super.afterAll()
-    system.shutdown() // Shuts down the system
+    system.terminate() // Shuts down the system
 
   }
 }

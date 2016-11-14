@@ -99,7 +99,9 @@ class LiftCarriageWithMovingState (val movementHWIndicator: Option[ActorRef] = N
   when (Moving)              {
     case Event(ReachedFloor(currentStop),_) =>
       currentFloorID = pendingPassengerRequests.head.floorID
-      pendingPassengerRequests = pendingPassengerRequests.tail
+
+      // All pending requests to this floor, should be removed.
+      pendingPassengerRequests = pendingPassengerRequests.tail filter (n => n.floorID != this.currentFloorID)
       log.debug(s"current Floor ($currentFloorID), remaining to go ($pendingPassengerRequests)")
       goto (Stopped)
 

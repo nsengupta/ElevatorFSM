@@ -1,32 +1,27 @@
 package withExplicitMovingState
 
-import java.util.concurrent.TimeUnit
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorSystem, Props}
 import akka.actor.FSM.{CurrentState, SubscribeTransitionCallBack, Transition}
-import akka.testkit.{DebugFilter, EventFilter, ImplicitSender, TestActorRef, TestFSMRef, TestKit, TestProbe}
+import akka.testkit.{ImplicitSender, TestFSMRef, TestKit, TestProbe}
 
 import scala.concurrent.duration._
 import common.StopSystemAfterAll
 import org.nirmalya.carriages.types.withExplicitMovingState.LiftCarriageWithMovingState
 import org.nirmalya.common.entities._
 import org.nirmalya.common.entities.DefaultMovingStateSimulatorActor
-import org.scalatest.time.Millisecond
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
 
 /**
   * Created by nirmalya on 26/10/16.
   */
 
-class LiftCarriageMovingStoppingCorrectlyTest extends TestKit(ActorSystem("testsystem"))
+class LiftCarriageMovingStoppingCorrectlyTest extends TestKit(ActorSystem("Lift-system"))
   with WordSpecLike
   with MustMatchers
   with BeforeAndAfterAll
   with ImplicitSender
   with StopSystemAfterAll {
-
-   //var testCarriageFSM: TestFSMRef[LiftState,LiftData,LiftCarriageWithMovingState] = _
-
 
   val movingStateSimulator = system.actorOf(Props(DefaultMovingStateSimulatorActor))
 
@@ -121,7 +116,7 @@ class LiftCarriageMovingStoppingCorrectlyTest extends TestKit(ActorSystem("tests
 
     "let three passengers in and transport them to their destinations" in {
 
-      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState())
+      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState(Some(movingStateSimulator)))
 
       val testProbe = TestProbe()
       testCarriageFSM ! SubscribeTransitionCallBack(testProbe.ref)
@@ -141,21 +136,74 @@ class LiftCarriageMovingStoppingCorrectlyTest extends TestKit(ActorSystem("tests
         case Transition(_,PoweredOn,Ready) => true
       }
 
-      testCarriageFSM ! PassengerRequestsATransportTo(Vector(2,6,8))
+      testCarriageFSM ! PassengerRequestsATransportTo(Vector(2,6,8,2,2))
 
       testProbe.expectMsgAllOf(
         10 seconds,
         Transition  (testCarriageFSM,Ready,Moving),
         Transition  (testCarriageFSM,Moving,Stopped),
         Transition  (testCarriageFSM,Stopped,Moving),
-        Transition  (testCarriageFSM,Moving,Stopped),
+        Transition  (testCarriageFSM,Moving,Stopped)
+      )
+
+      testCarriageFSM ! ReportCurrentFloor
+      expectMsg(StoppedAt(6))
+
+      testProbe.expectMsgAllOf(// Carriage comes to Ready when no more pending floors exist.
+        10 seconds,
         Transition  (testCarriageFSM,Stopped,Moving),
         Transition  (testCarriageFSM,Moving,Stopped),
         Transition  (testCarriageFSM,Stopped,Ready)
-      )
 
+      )
       testCarriageFSM ! ReportCurrentFloor
       expectMsg(StoppedAt(8))
     }
   }
+
+  "should visit same floor only once till it comes back to Ready" in {
+
+    val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState(Some(movingStateSimulator)))
+
+    val testProbe = TestProbe()
+    testCarriageFSM ! SubscribeTransitionCallBack(testProbe.ref)
+
+
+    testProbe.expectMsgPF() {
+      case CurrentState(_,PoweredOff) => true
+    }
+
+    testCarriageFSM ! InstructedToPowerOn
+    testProbe.expectMsgPF() {
+      case Transition(_,PoweredOff,PoweredOn) => true
+    }
+    testCarriageFSM ! BeReady
+
+    testProbe.expectMsgPF() {
+      case Transition(_,PoweredOn,Ready) => true
+    }
+
+    testCarriageFSM ! PassengerRequestsATransportTo(Vector(2,6,2,2))
+
+    testProbe.expectMsgAllOf(
+      10 seconds,
+      Transition  (testCarriageFSM,Ready,Moving),
+      Transition  (testCarriageFSM,Moving,Stopped)
+    )
+
+    testCarriageFSM ! ReportCurrentFloor
+    expectMsg(StoppedAt(2))
+
+    testProbe.expectMsgAllOf( // Carriage comes to Ready when no more pending floors exist.
+      10 seconds,
+      Transition  (testCarriageFSM,Stopped,Moving),
+      Transition  (testCarriageFSM,Moving,Stopped),
+      Transition  (testCarriageFSM,Stopped,Ready)
+    )
+
+    testCarriageFSM ! ReportCurrentFloor
+    expectMsg(StoppedAt(6))
+
+  }
+
 }
