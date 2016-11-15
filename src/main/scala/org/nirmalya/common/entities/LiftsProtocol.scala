@@ -25,7 +25,6 @@ case class   CurrentStateIndicatorMessage(info:  InfoForController) extends Intr
 object       InstructedToPowerOn   extends IntraLiftMessage
 object       InstructedToPowerOff  extends IntraLiftMessage
 object       BeReady           extends IntraLiftMessage
-case class   RespondingToPassengerAt(floorID: Int) extends IntraLiftMessage
 case class   ReachedWaitingPassengerAt(floorID: Int)  extends IntraLiftMessage
 case class   TransportingPassengerTo(floorID: Int) extends  IntraLiftMessage
 case class   InstructedToDropPassengerAt(floorID: Int) extends  IntraLiftMessage
