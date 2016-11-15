@@ -36,7 +36,7 @@ class LiftCarriageMovingStoppingCorrectlyTest extends TestKit(ActorSystem("Lift-
   "A LiftCarriage" must {
     "be ready, when it settles down after being PoweredOn" in {
 
-      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState())
+      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState(movingStateSimulator))
       val testProbe = TestProbe()
 
       testCarriageFSM ! SubscribeTransitionCallBack(testProbe.ref)
@@ -54,7 +54,7 @@ class LiftCarriageMovingStoppingCorrectlyTest extends TestKit(ActorSystem("Lift-
 
     "move to where a passenger is waiting, if ready" in {
 
-      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState())
+      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState(movingStateSimulator))
 
       val testProbe = TestProbe()
       testCarriageFSM ! SubscribeTransitionCallBack(testProbe.ref)
@@ -97,7 +97,7 @@ class LiftCarriageMovingStoppingCorrectlyTest extends TestKit(ActorSystem("Lift-
     }
     "let a passenger in and transport her to her destination" in {
 
-      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState())
+      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState(movingStateSimulator))
 
       testCarriageFSM ! InstructedToPowerOn
       testCarriageFSM ! BeReady
@@ -116,7 +116,7 @@ class LiftCarriageMovingStoppingCorrectlyTest extends TestKit(ActorSystem("Lift-
 
     "let three passengers in and transport them to their destinations" in {
 
-      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState(Some(movingStateSimulator)))
+      val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState(movingStateSimulator))
 
       val testProbe = TestProbe()
       testCarriageFSM ! SubscribeTransitionCallBack(testProbe.ref)
@@ -163,7 +163,7 @@ class LiftCarriageMovingStoppingCorrectlyTest extends TestKit(ActorSystem("Lift-
 
   "should visit same floor only once till it comes back to Ready" in {
 
-    val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState(Some(movingStateSimulator)))
+    val testCarriageFSM = TestFSMRef(new LiftCarriageWithMovingState(movingStateSimulator))
 
     val testProbe = TestProbe()
     testCarriageFSM ! SubscribeTransitionCallBack(testProbe.ref)

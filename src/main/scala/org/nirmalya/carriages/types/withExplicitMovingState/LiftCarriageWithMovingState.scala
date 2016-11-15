@@ -11,7 +11,7 @@ import scala.collection.immutable.Vector
 /**
   * Created by nirmalya on 24/10/16.
   */
-class LiftCarriageWithMovingState (val movementHWIndicator: Option[ActorRef] = None) extends Actor
+class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Actor
   with LoggingFSM[LiftState,LiftData]
   with ActorLogging
 {
@@ -53,7 +53,9 @@ class LiftCarriageWithMovingState (val movementHWIndicator: Option[ActorRef] = N
       else {
 
         this.pendingPassengerRequests = accumulateWaitingRequest(destFloorID)
-        simulateMovementTo(this.pendingPassengerRequests.head)
+        movementHWIndicator ! InformMeOnReaching(
+                                  this.currentFloorID,
+                                  this.pendingPassengerRequests.head)
         goto (Moving)
       }
   }
@@ -62,7 +64,9 @@ class LiftCarriageWithMovingState (val movementHWIndicator: Option[ActorRef] = N
     case Event(PassengerRequestsATransportTo(floorIDs),_) =>
       log.debug(s"Received message: PassengerWantsToGoTo($floorIDs)")
       this.pendingPassengerRequests = accumulateTransportRequest(floorIDs)
-      simulateMovementTo(this.pendingPassengerRequests.head)
+      movementHWIndicator ! InformMeOnReaching(
+                              this.currentFloorID,
+                              this.pendingPassengerRequests.head)
       goto (Moving)
   }
 
@@ -74,7 +78,9 @@ class LiftCarriageWithMovingState (val movementHWIndicator: Option[ActorRef] = N
       }
       else {
         log.debug(s"Stopped.timeout, moving to floor:( ${this.pendingPassengerRequests.head} )")
-        simulateMovementTo(this.pendingPassengerRequests.head)
+        movementHWIndicator ! InformMeOnReaching(
+                                  this.currentFloorID,
+                                  this.pendingPassengerRequests.head)
         goto(Moving)
       }
   }
@@ -116,24 +122,20 @@ class LiftCarriageWithMovingState (val movementHWIndicator: Option[ActorRef] = N
 
   whenUnhandled {
     case Event(ReportCurrentFloor, _) =>
-      //log.debug(s" In $stateName, Unhandled message ReportCurrentFloor received, currently at floor ${this.currentFloorID}")
       sender ! StoppedAt(this.currentFloorID)
       stay
   }
 
   onTransition {
     case Stopped -> Stopped => {
-      println("Remaining in Stopped ...")
+      log.debug("Remaining in Stopped ...")
     }
   }
 
   private def simulateMovementTo(nextStop: NextStop) = {
     log.debug(s"Simulating movment to ${nextStop.floorID},${nextStop.purposeOfMovement}")
 
-    this.movementHWIndicator match {
-       case Some(handler) => handler ! InformMeOnReaching(this.currentFloorID, nextStop)
-       case None          => self ! ReachedFloor(nextStop)
-     }
+    movementHWIndicator ! InformMeOnReaching(this.currentFloorID, nextStop)
 
   }
 
