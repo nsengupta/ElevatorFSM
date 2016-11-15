@@ -20,25 +20,25 @@ object PurposeOfMovement extends Enumeration {
   val ToWelcomeInAnWaitingPassenger, ToAllowATransportedPassengerAlight = Value
 }
 
-sealed trait IntraLiftMessage
-case class   CurrentStateIndicatorMessage(info:  InfoForController) extends IntraLiftMessage
-object       InstructedToPowerOn   extends IntraLiftMessage
-object       InstructedToPowerOff  extends IntraLiftMessage
-object       BeReady           extends IntraLiftMessage
-case class   ReachedWaitingPassengerAt(floorID: Int)  extends IntraLiftMessage
-case class   TransportingPassengerTo(floorID: Int) extends  IntraLiftMessage
-case class   InstructedToDropPassengerAt(floorID: Int) extends  IntraLiftMessage
-case class   StoppedAt(floorID: Int) extends  IntraLiftMessage
-case class   PassengerIsWaitingAt(dest: Int) extends IntraLiftMessage
-case class   ReachedFloor(thisStop: NextStop) extends IntraLiftMessage
+sealed trait ControllerAndCarriageInteractionMessage
+case class   CurrentStateIndicatorMessage(info:  InfoForController) extends ControllerAndCarriageInteractionMessage
+object       InstructedToPowerOn   extends ControllerAndCarriageInteractionMessage
+object       InstructedToPowerOff  extends ControllerAndCarriageInteractionMessage
+object       BeReady           extends ControllerAndCarriageInteractionMessage
+case class   ReachedWaitingPassengerAt(floorID: Int)  extends ControllerAndCarriageInteractionMessage
+case class   TransportingPassengerTo(floorID: Int) extends  ControllerAndCarriageInteractionMessage
+case class   StoppedAt(name: String = "NA", floorID: Int) extends  ControllerAndCarriageInteractionMessage
+case class   PassengerIsWaitingAt(dest: Int) extends ControllerAndCarriageInteractionMessage
+case class   ReachedFloor(thisStop: NextStop) extends ControllerAndCarriageInteractionMessage
 case class   InformMeOnReaching(fromFloor: Int, toStop: NextStop)
-case object  ReportCurrentFloor extends IntraLiftMessage
+case object  ReportCurrentFloor extends ControllerAndCarriageInteractionMessage
+case class   InquireWithCarriage(carriageID: Int,floorID: Int) extends ControllerAndCarriageInteractionMessage
 
 case class NextStop(floorID: Int, purposeOfMovement: PurposeOfMovement)
 
-sealed trait UserAndLiftInteractionMessage
-case class   PassengerRequestsATransportTo(dests: Vector[Int]) extends UserAndLiftInteractionMessage
-case class   PassengerAskedForLiftAt(floorID: Int) extends UserAndLiftInteractionMessage
+sealed trait PassengerAndCarriageInteractionMessage
+case class   PassengerRequestsATransportTo(dests: Vector[Int]) extends PassengerAndCarriageInteractionMessage
+case class   PassengerAskedForLiftAt(floorID: Int) extends PassengerAndCarriageInteractionMessage
 
 sealed trait LiftState
 object PoweredOff extends LiftState

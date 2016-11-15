@@ -122,7 +122,7 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
 
   whenUnhandled {
     case Event(ReportCurrentFloor, _) =>
-      sender ! StoppedAt(this.currentFloorID)
+      sender ! StoppedAt(self.path.name,this.currentFloorID)
       stay
   }
 
@@ -142,7 +142,9 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
       (toFloorIDs.map(f => NextStop(f,PurposeOfMovement.ToAllowATransportedPassengerAlight)))
 
   initialize() // Customary initialization hook for an FSM
+}
 
-
+object LiftCarriageWithMovingState {
+  def props(hwSimulator: ActorRef) = Props(new LiftCarriageWithMovingState(hwSimulator))
 }
 

@@ -9,7 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Created by nirmalya on 28/10/16.
   */
-trait MovingStateSimulator extends Actor with ActorLogging {
+abstract class MovingStateSimulator(hwID: Int) extends Actor with ActorLogging {
 
   case class SpentTimeToReach(nextStop: NextStop, carriageToBeInformed: ActorRef)
 
@@ -31,7 +31,8 @@ trait MovingStateSimulator extends Actor with ActorLogging {
   }
 }
 
-object DefaultMovingStateSimulatorActor extends MovingStateSimulator
+// Used for testing only
+object DefaultMovingStateSimulatorActor extends MovingStateSimulator(0)
   with ActorLogging {
 
   override def simulateMovementTo(

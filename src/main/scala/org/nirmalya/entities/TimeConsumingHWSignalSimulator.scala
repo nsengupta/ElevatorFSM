@@ -1,7 +1,7 @@
 package org.nirmalya.entities
 
 
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, Props}
 import org.nirmalya.common.entities._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,7 +10,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Created by nirmalya on 7/11/16.
   */
-object TimeConsumingHWSignalSimulator extends MovingStateSimulator with ActorLogging {
+class TimeConsumingHWSignalSimulator(hwID: Int) extends MovingStateSimulator(hwID) with ActorLogging {
 
   private def computeTimeToMoveBetweenFloors(fromFloorID: Int, toFloorID: Int): FiniteDuration = {
 
@@ -27,4 +27,8 @@ object TimeConsumingHWSignalSimulator extends MovingStateSimulator with ActorLog
       evToFire
     )
   }
+}
+
+object TimeConsumingHWSignalSimulator {
+  def props(hwID: Int) = Props(new TimeConsumingHWSignalSimulator(hwID))
 }

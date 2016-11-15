@@ -22,13 +22,11 @@ class HWSignalSimulationTest extends TestKit(ActorSystem("HW-Simulation-system")
   with ImplicitSender
   with StopSystemAfterAll{
 
-  val hwSignalSimulator = system.actorOf(Props(TimeConsumingHWSignalSimulator))
+  val hwSignalSimulatorProps = TimeConsumingHWSignalSimulator.props(1)
+  val hwSignalSimulator = system.actorOf(hwSignalSimulatorProps)
 
   "A HWSignalSimulator" must {
     "respond after correctly computed time to travel, has elapsed" in {
-
-
-
       val fromFloorID = 2
       val toNextStop = NextStop(4,PurposeOfMovement.ToAllowATransportedPassengerAlight)
 
