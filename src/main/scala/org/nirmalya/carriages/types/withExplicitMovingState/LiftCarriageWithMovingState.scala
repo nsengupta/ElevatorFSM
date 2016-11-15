@@ -132,13 +132,6 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
     }
   }
 
-  private def simulateMovementTo(nextStop: NextStop) = {
-    log.debug(s"Simulating movment to ${nextStop.floorID},${nextStop.purposeOfMovement}")
-
-    movementHWIndicator ! InformMeOnReaching(this.currentFloorID, nextStop)
-
-  }
-
   private def settleDownAtGroundFloor = this.currentFloorID = 0
 
   private def accumulateWaitingRequest(toFloorID: Int): Vector[NextStop] =
