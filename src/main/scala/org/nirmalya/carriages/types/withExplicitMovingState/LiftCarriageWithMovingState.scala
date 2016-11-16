@@ -16,8 +16,6 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
   with ActorLogging
 {
 
-  import context._
-
   val mxTimeToWaitStopping = 250 milliseconds
   private var pendingPassengerRequests: Vector[NextStop] = Vector.empty
   private var currentFloorID = 0 // Always start at Ground Floor
@@ -40,14 +38,12 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
 
   private val beReady: StateFunction = {
     case Event(BeReady,_)          =>
-      log.debug(context.self.toString()  + s" in $this.stateName received message (BeReady)")
       settleDownAtGroundFloor
       goto (Ready)
   }
 
   private val moveToWaitingPassenger: StateFunction = {
     case Event(PassengerIsWaitingAt(destFloorID), _) =>
-      //log.debug(context.self.toString() + s" in $this.stateName received message (PassengerIsWaiting ($destFloorID + ))")
       if (currentFloorID == destFloorID)
         goto (Stopped)
       else {
@@ -108,7 +104,7 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
 
       // All pending requests to this floor, should be removed.
       pendingPassengerRequests = pendingPassengerRequests.tail filter (n => n.floorID != this.currentFloorID)
-      log.debug(s"current Floor ($currentFloorID), remaining to go ($pendingPassengerRequests)")
+      log.debug(s"Carriage(${self.path.name}): reached($currentFloorID), remaining ${prettifyForLogging(pendingPassengerRequests)}")
       goto (Stopped)
 
     case Event(PassengerIsWaitingAt(floorID),_)      =>
@@ -140,6 +136,24 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
   private def accumulateTransportRequest(toFloorIDs: Vector[Int]): Vector[NextStop] =
     this.pendingPassengerRequests ++
       (toFloorIDs.map(f => NextStop(f,PurposeOfMovement.ToAllowATransportedPassengerAlight)))
+
+  private def prettifyForLogging(floorsToVisit: Vector[NextStop]):String = {
+
+    if (floorsToVisit.isEmpty)
+      "(No more at the moment)"
+    else
+      floorsToVisit.foldLeft(new StringBuilder)((buffer,nextFloor) => {
+
+        val toVisitFloor = nextFloor.floorID
+        val reasonToVisitFloor =
+          if (nextFloor.purposeOfMovement ==  PurposeOfMovement.ToAllowATransportedPassengerAlight)
+            "toDrop"
+          else "toPick"
+
+        buffer.append(s"($toVisitFloor-$reasonToVisitFloor)").append(" | ")
+      }).toString
+
+  }
 
   initialize() // Customary initialization hook for an FSM
 }

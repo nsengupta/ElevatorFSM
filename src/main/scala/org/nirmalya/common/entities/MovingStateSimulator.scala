@@ -26,7 +26,7 @@ abstract class MovingStateSimulator(hwID: Int) extends Actor with ActorLogging {
         simulateMovementTo(fromFloorID,nextStop)
 
     case SpentTimeToReach(nextStop,carriageToBeInformed)   =>
-      log.debug(s"Informing ${carriageToBeInformed} after reaching the floor.")
+      log.debug(s"Hardware(${self.path.name}), informing Carriage(${carriageToBeInformed.path.name}), of arrival at floor(${nextStop.floorID}).")
       carriageToBeInformed ! ReachedFloor(nextStop)
   }
 }

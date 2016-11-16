@@ -1,13 +1,15 @@
 package org.nirmalya.entities
 
-import akka.actor.{Actor, ActorLogging, ActorRef, FSM}
+import akka.actor.{Actor, ActorLogging, ActorRef, LoggingFSM, Props}
 import org.nirmalya.common.entities._
-import org.nirmalya.entities
+
 
 /**
   * Created by nirmalya on 20/10/16.
   */
-class LiftController (id: Int, carriages: Vector[ActorRef]) extends Actor with FSM[LiftState,LiftData] with ActorLogging {
+class LiftController (carriages: Vector[ActorRef]) extends Actor
+  with LoggingFSM[LiftState,LiftData]
+  with ActorLogging {
 
   import context._
 
@@ -15,35 +17,47 @@ class LiftController (id: Int, carriages: Vector[ActorRef]) extends Actor with F
 
   private val dontCare: StateFunction = {
     case _ =>
-      log.debug(context.self.toString() + s" in $this.stateName received message ( $this.Event ), nothing to do.")
+      log.debug(s" in $this.stateName received message ( $this.Event ), nothing to do.")
       stay
   }
 
   private val powerYourselfOff: StateFunction = {
-    case Event(InstructedToPowerOff,_) =>
-      log.debug(context.self.toString()    + s" in $this.stateName received message (PowerYourselfoff).")
+    case Event(InstructedToPowerOff, _) =>
+      log.debug(s"Controller:  in $this.stateName received message (PowerYourselfoff).")
       stay
   }
 
   private val powerYourselfOn: StateFunction = {
-    case Event(InstructedToPowerOn,_)  =>
-      log.debug(context.self.toString()    + s" in $this.stateName received message (PowerYourselfOn)")
-      goto (PoweredOn)
+    case Event(InstructedToPowerOn, _) => goto(PoweredOn)
   }
 
   private val beReady: StateFunction = {
-    case Event(BeReady,_)          =>
-      log.debug(context.self.toString()  + s" in $this.stateName received message (BeReady)")
-      goto (Ready)
+    case Event(BeReady, _) => goto(Ready)
   }
 
   private val respondToWaitingPassenger: StateFunction = {
-    case Event(PassengerAskedForLiftAt(floorID),_)          =>
-      log.debug(context.self.toString()  + s" in $this.stateName received message (BeReady)")
-      chooseCarriageRR ! PassengerIsWaitingAt(floorID)
+    case Event(PassengerIsWaitingAt(floorID), _) =>
+      val carriageChosen = chooseCarriageRR
+      log.debug(s"Controller: instructing Carriage(${carriageChosen.path.name}), to pick passenger at ($floorID).")
+      carriageChosen ! PassengerIsWaitingAt(floorID)
       stay
   }
 
+  private val inquireCarriage: StateFunction = {
+    case Event(InquireWithCarriage(carriageID), _) =>
+      log.debug(s"Controller: asking Carriage(${carriages(carriageID).path.name}), its current floor.")
+      carriages(carriageID) ! ReportCurrentFloor
+      stay
+    case Event(StoppedAt(name,floorID),_)  =>
+      log.debug(s"Controller: Carriage(${name}), is at floor($floorID), at the moment.")
+      stay
+  }
+
+  onTransition {
+      case PoweredOff -> PoweredOn   => this.carriages.foreach( nextCarriage => nextCarriage ! InstructedToPowerOn)
+      case PoweredOn  -> PoweredOff  => this.carriages.foreach( nextCarriage => nextCarriage ! InstructedToPowerOff)
+      case PoweredOn  -> Ready       => this.carriages.foreach( nextCarriage => nextCarriage ! BeReady)
+  }
 
   startWith(PoweredOff,InitialData)
 
@@ -55,6 +69,7 @@ class LiftController (id: Int, carriages: Vector[ActorRef]) extends Actor with F
                      orElse dontCare)
 
   when (Ready)      (respondToWaitingPassenger
+                     orElse inquireCarriage
                      orElse powerYourselfOff
                      orElse dontCare)
 
@@ -64,4 +79,12 @@ class LiftController (id: Int, carriages: Vector[ActorRef]) extends Actor with F
      this.circularArrangementOfCarriages.next
   }
 
+  // Mandatory initialization of the FSM
+  initialize
+
+}
+
+// Recommended factory method
+object LiftController {
+  def props(carriages: Vector[ActorRef]) = Props(new LiftController(carriages))
 }

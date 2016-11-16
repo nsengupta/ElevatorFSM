@@ -32,7 +32,7 @@ case class   PassengerIsWaitingAt(dest: Int) extends ControllerAndCarriageIntera
 case class   ReachedFloor(thisStop: NextStop) extends ControllerAndCarriageInteractionMessage
 case class   InformMeOnReaching(fromFloor: Int, toStop: NextStop)
 case object  ReportCurrentFloor extends ControllerAndCarriageInteractionMessage
-case class   InquireWithCarriage(carriageID: Int,floorID: Int) extends ControllerAndCarriageInteractionMessage
+case class   InquireWithCarriage(carriageID: Int) extends ControllerAndCarriageInteractionMessage
 
 case class NextStop(floorID: Int, purposeOfMovement: PurposeOfMovement)
 
