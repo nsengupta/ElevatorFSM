@@ -15,7 +15,7 @@ object HotelLiftSystem extends App {
 
   case class Lift (carriage: ActorRef, buttonPanel: ActorRef, hwSimulator: ActorRef)
 
-  val lifts = (1 to 2) map {i =>
+  val lifts = (0 to 1) map {i =>
 
     val hwSignalSimulatorProps = TimeConsumingHWSignalSimulator.props(i)
     val hwSignalSimulator      = system.actorOf(hwSignalSimulatorProps,s"hw_$i")
