@@ -22,7 +22,7 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
 
   private val dontCare: StateFunction = {
     case _ =>
-      log.debug(context.self.toString() + s" in $this.stateName received message ( $this.Event ), nothing to do.")
+      log.debug(context.self.toString().+(StringContext.apply(" in ", ".stateName received message ( ", ".Event ), nothing to do.").s(this, this)))
       stay
   }
 
@@ -44,25 +44,25 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
 
   private val moveToWaitingPassenger: StateFunction = {
     case Event(PassengerIsWaitingAt(destFloorID), _) =>
-      if (currentFloorID == destFloorID)
+      if (currentFloorID.==(destFloorID))
         goto (Stopped)
       else {
 
         this.pendingPassengerRequests = accumulateWaitingRequest(destFloorID)
-        movementHWIndicator ! InformMeOnReaching(
+        movementHWIndicator.!(InformMeOnReaching.apply(
                                   this.currentFloorID,
-                                  this.pendingPassengerRequests.head)
+                                  this.pendingPassengerRequests.head))
         goto (Moving)
       }
   }
 
   private val transportPassengerToDest: StateFunction = {
     case Event(PassengerRequestsATransportTo(floorIDs),_) =>
-      log.debug(s"Received message: PassengerWantsToGoTo($floorIDs)")
+      log.debug(StringContext.apply("Received message: PassengerWantsToGoTo(", ")").s(floorIDs))
       this.pendingPassengerRequests = accumulateTransportRequest(floorIDs)
-      movementHWIndicator ! InformMeOnReaching(
+      movementHWIndicator.!(InformMeOnReaching.apply(
                               this.currentFloorID,
-                              this.pendingPassengerRequests.head)
+                              this.pendingPassengerRequests.head))
       goto (Moving)
   }
 
@@ -73,22 +73,20 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
         goto (Ready)
       }
       else {
-        log.debug(s"Stopped.timeout, moving to floor:( ${this.pendingPassengerRequests.head} )")
-        movementHWIndicator ! InformMeOnReaching(
+        log.debug(StringContext.apply("Stopped.timeout, moving to floor:( ", " )").s(this.pendingPassengerRequests.head))
+        movementHWIndicator.!(InformMeOnReaching.apply(
                                   this.currentFloorID,
-                                  this.pendingPassengerRequests.head)
+                                  this.pendingPassengerRequests.head))
         goto(Moving)
       }
   }
 
   startWith(PoweredOff,InitialData)
 
-  when (PoweredOff) (powerYourselfOn orElse
-                     dontCare)
+  when (PoweredOff) (powerYourselfOn.orElse(dontCare))
 
   when (PoweredOn)  (powerYourselfOff orElse
-                     beReady orElse
-                     dontCare)
+                     beReady.orElse(dontCare))
 
   when (Ready)      (moveToWaitingPassenger   orElse
                      transportPassengerToDest )
@@ -104,7 +102,7 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
 
       // All pending requests to this floor, should be removed.
       pendingPassengerRequests = pendingPassengerRequests.tail filter (n => n.floorID != this.currentFloorID)
-      log.debug(s"Carriage(${self.path.name}): reached($currentFloorID), remaining ${prettifyForLogging(pendingPassengerRequests)}")
+      log.debug(StringContext.apply("Carriage(", "): reached(", "), remaining ", "").s(self.path.name, currentFloorID, prettifyForLogging(pendingPassengerRequests)))
       goto (Stopped)
 
     case Event(PassengerIsWaitingAt(floorID),_)      =>
@@ -118,7 +116,7 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
 
   whenUnhandled {
     case Event(ReportCurrentFloor, _) =>
-      sender ! StoppedAt(self.path.name,this.currentFloorID)
+      sender ! StoppedAt.apply(self.path.name,this.currentFloorID)
       stay
   }
 
@@ -131,11 +129,11 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
   private def settleDownAtGroundFloor = this.currentFloorID = 0
 
   private def accumulateWaitingRequest(toFloorID: Int): Vector[NextStop] =
-    this.pendingPassengerRequests :+ NextStop(toFloorID,PurposeOfMovement.ToWelcomeInAnWaitingPassenger)
+    this.pendingPassengerRequests :+ NextStop.apply(toFloorID,PurposeOfMovement.ToWelcomeInAnWaitingPassenger)
 
   private def accumulateTransportRequest(toFloorIDs: Vector[Int]): Vector[NextStop] =
     this.pendingPassengerRequests ++
-      (toFloorIDs.map(f => NextStop(f,PurposeOfMovement.ToAllowATransportedPassengerAlight)))
+      (toFloorIDs.map(f => NextStop.apply(f,PurposeOfMovement.ToAllowATransportedPassengerAlight)))
 
   private def prettifyForLogging(floorsToVisit: Vector[NextStop]):String = {
 
@@ -150,7 +148,7 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
             "toDrop"
           else "toPick"
 
-        buffer.append(s"($toVisitFloor-$reasonToVisitFloor)").append(" | ")
+        buffer.append(StringContext.apply("(", "-", ")").s(toVisitFloor, reasonToVisitFloor)).append(" | ")
       }).toString
 
   }
@@ -159,6 +157,6 @@ class LiftCarriageWithMovingState (val movementHWIndicator: ActorRef) extends Ac
 }
 
 object LiftCarriageWithMovingState {
-  def props(hwSimulator: ActorRef) = Props(new LiftCarriageWithMovingState(hwSimulator))
+  def props(hwSimulator: ActorRef) = Props.apply(new LiftCarriageWithMovingState(hwSimulator))
 }
 

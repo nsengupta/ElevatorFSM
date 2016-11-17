@@ -13,4 +13,25 @@ using one elevator as an unit:
 
 I don't expect to complete this at one go. Instead, I will build it phase-wise.
 
-The blog is here (to be inserted).
+The blog is [here](http://blogoloquy.blogspot.in/2016/11/finite-state-machine-using-akka.html).
+
+A few hints about various components (may help follow the implementation)
+
+- org.nirmalya.carriages.types.withExplicitMovingState.LiftCarriageWithMovingState
+
+It models the carriage itself; constructed with a _TimeConsumingHWSignalSimulator_
+
+- org.nirmalya.entities.TimeConsumingHWSignalSimulator
+
+It implements the _MovingStateSimulator_ trait. Specifically, it implements the simulation of 
+spending time while moving to a particular floor (function: simulateMovementTo()).
+
+- org.nirmalya.entities.InlaidButtonPanel
+
+It models a button panel mounted inside a carriage. It is identified by an ID as well as the
+carriage it is mounted inside. The carriage is an actor; hence, it is constructed with an
+_ActorRef_.
+
+- org.nirmalya.entities.LiftController
+
+The Controller in the system. It is constructed with a collection of carriages.
